@@ -1,0 +1,189 @@
+%% Copyright 1998 Pepe Kubon
+%%
+%% `three.tex' --- 3rd chapter for thes-full.tex, thes-short-tex from
+%%               the `csthesis' bundle
+%%
+%% You are allowed to distribute this file together with all files
+%% mentioned in READ.ME.
+%%
+%% You are not allowed to modify its contents.
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%     Chapter 4
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Experiments and Results}
+\label{three}
+In Chapter 2 we introduced coarse LMs and coarse Bi-LMs. We also introduced biligual word embeddings and clustering of embeddings using \textbf{greedo}~\cite{Stratos2014}. We described our baseline system, which is am implementation of \cite{Stewart2014}. We also introduced three new approaches (Section~\ref{approaches}) in which we utilize bilingual word embeddings~\cite{Hermann14} to create coarse LMs and BiLMs. In this chapter we will explain the steps that we took to test and compare our approaches to the baseline system.
+
+For our experiments we use a Chinese(Zh)-English(En) parallel corpus. The data is separated into three parts:
+\begin{itemize}
+	\item The training dataset is used to train the phrase-based SMT system and bilingual word embeddings.
+	\item The tuning dataset is used to tune the weights of features used in Moses decoder~\cite{Koehn2007Moses}.
+	\item We report our results on the test dataset. This is a bling dataset that was not used during the training and tuning step.
+\end{itemize}
+Table~\ref{table:corpus-statistics} shows the details of our data.
+
+\begin{table}
+	\begin{center}
+		\begin{tabular}{|c|c|c|c|}
+			\hline
+			\textbf{Dataset} & \textbf{Corpus} & \textbf{Size} & \textbf{Number of References}\\\hline
+			Training & HK + GALE Phase 1 & 2,352,888 & N/A \\\hline
+			Tuning & MTC Parts 1 \& 3 & 1927 & 4\\\hline
+			Testing & MTC Part 4 & 919 & 4\\\hline
+		\end{tabular}
+		\caption{Corpus Statistics: Chinese-English Parallel Corpus}
+		\label{table:corpus-statistics}		
+	\end{center}
+\end{table}
+
+\section{Baseline System}\label{three-baseline}
+Our baseline system is the system developed by \cite{Stewart2014}. As shown in Figure~\ref{fig:baseline}, we first use \textbf{mkcls} to cluster the English corpus into clusters of size 100, 400 and 1600. We also cluster the Chinese corpus into cluster of size 400. Using the English clusters, the words in English corpus are replaced with the cluster ids to create augment corporas $100_{en}$, $1600_{en}$ and $400_{en}$. Similarly, we augment the Chinese corpus using the Chinese clusters to create $400_{zh}$.
+
+Using \textbf{SRILM}, we estimate coarse LMs \textit{Coarse LM $100_{en}$} and \textit{Coarse LM $1600_{en}$}.
+
+To create coarse Bi-LMs, we first need to create bitoken sequences using augmented corporas $400_{zh}$ and $400_{en}$. To create the bitoken sequences, as shown in Figure~\ref{fig:bitokens-clusters}, we first need to create bidirectional alignments using the Zh-En parallel corpus. Using GIZA++\cite{Och2003}, we create the following biderectional alignments:
+\begin{itemize}
+	\item IBM Model 2~\cite{Brown1993} alignments.
+	\item Hidden Markov Model (HMM)~\cite{Och2003} alignments. 
+\end{itemize}
+For both the alignments, \textit{grow-diag-final-and} heuristic (outlined in Section~\ref{intro-tm}) is used. The alignments between the source and target words in Zh-En parallel corpus from both the alignment models are concatenated together. This is done to increase the different types of bitokens. Using the alignments, and augmented corporas $400_{zh}$ and $400_{en}$, the bitoken sequences are created, called ($400_{zh}$, $400_{en}$) bitoken corpus.
+
+A copy of the ($400_{zh}$, $400_{en}$) bitoken corpus is used to estimate coarse Bi-LM \textit{Coarse Bi-LM $(400_{zh},\ 400_{en})$}. The second copy of bitoken corpus is clustered using \textbf{mkcls} with cluster size set to 400. The bitokens in the bitoken corpus are replaced with the new cluster ids to create augmented corpus $400_{bi}(400_{zh},\ 400_{en})$ Using \textbf{SRILM}, coarse Bi-LM \textit{Coarse Bi-LM $400_{bi}(400_{zh},\ 400_{en})$} is estimated.
+
+When estimating the coarse LMs and Bi-LMs, we use \textit{Witten-Bell smoothing} \cite{WittenBell1991}. Coarse LMs and Bi-LMs create counts of counts that the SRILM implementation of Kneser-Ney smoothing cannot cope up with. \cite{Stewart2014} states that Witten-Bell smoothing outperforms Good-Turing smoothing. They also state that 8-gram coarse models outperformed lower n-gram coarse models. Hence, all our coarse LMs and Bi-LMs are 8-gram models.
+
+The four coarse LMs and Bi-LMs are used in a stateful feature function in Moses decoder. We will talk about decoder in a later section. In the next section we explain our steps to create the coarse models as described in our appraoches.
+
+\section{Bi-LMs using Word Embeddings}\label{three-approaches}
+In this thesis we propose three approaches to create coarse LMs and Bi-LMs (Section~\ref{approaches}). The first step in creating coarse LMs and Bi-LMs using word embeddings is to create bilingual word embeddings for Zh-En parallel corpus.
+
+\subsection{Creating Bilingual Word Embeddings}\label{three-embeddings}
+In order to create bilingual word embeddings for Zh-En parallel corpus, we use \textbf{BiCVM}~\footnote{BiCVM by Karl Mortiz Hermann: \url{https://github.com/karlmoritz/bicvm}}, which has the implementation of \cite{Hermann14}. We use the following parameters to train the embeddings:
+\begin{itemize}
+	\item Tree type: \texttt{plain}
+	\item Type of model: \texttt{additive}
+	\item Training method: \texttt{adagrad}
+	\item Word vector dimensions: \texttt{word-width: 300}
+	\item Hinge loss margin: \texttt{300}
+	\item Number of noise samples per positive training example: \texttt{50}
+	\item Step size during gradient descent: \texttt{0.05}
+	\item L2 regularization for embeddings: \texttt{2}
+	\item Consider bi error for language 1: \texttt{true}
+	\item Consider bi error for language 2: \texttt{true}
+	\item Number of training iterations: \texttt{500}
+	\item Number of batches for adagrad: \texttt{50}
+\end{itemize}
+
+This will create bilingual word embeddings with 300 dimensions. We experimented with different values of parameters and different dimensions, but these parameters gave us the best embeddings. To judge how good the embeddings are, we use \textbf{WordEmbeddingsViz} (Section~\ref{WordEmbeddingsViz}). Using \textbf{WordEmbeddingsViz}, a human annotator looked at bilingual word embeddings generated with different parameters. The annotator looked at the embeddings and tried to align an English word with a Chinese word if the two words are a translation of each other. Based on observations of the human annotator, the above defined parameters for \textbf{BiCVM} were chosen. The above defined parameters were chosen because the English and Chinese word embeddings were close to each other after being projected to two dimensions using \textbf{tSNE}.
+
+\subsection{Creating Coarse LMs and Bi-LMs using Word Embeddings}
+In this subsection, we describe in detail the steps to create coarse LMs and Bi-LMs using the Zh-En bilingual embeddings (Subsection~\ref{three-embeddings}).
+
+\subsubsection{Approach 1}
+As shown in Figure~\ref{fig:idea1}, we first cluster the Zh-En bilingual word embeddings using \textbf{greedo}~\cite{Stratos2014}. The following clusters are generated:
+\begin{itemize}
+	\item Create clusters of size 100, 400 and 1600 for English embeddings.
+	\item Create cluster of size 400 for Chinese embeddings.
+\end{itemize}
+Using the cluster ids for each word, we augment the corpus (as described in \ref{three-baseline}) to get augmented corporas $100_{en}$, $1600_{en}$, $400_{en}$ and $400_{zh}$. Similar to our baseline system, we estimate \textit{8-gram} coarse LMs \textit{Coarse LM $100_{en}$} and \textit{Coarse LM $1600_{en}$} using \textbf{SRILM} with \textit{Witten-Bell smoothing}. Similarly, we use HMM and IBM Model 2 alignments to create a bitoken corpus ($400_{zh}$, $400_{en}$) from augmented corporas $400_{en}$ and $400_{zh}$.
+
+The bitoken corpus ($400_{zh}$, $400_{en}$) is clusterd using \textbf{mkcls} with cluster size set to 400. Using these clusters and bitoken corpus, augmented corpus $400_{bi}(400_{zh},\ 400_{en})$ is generated. Bitoken corpus ($400_{zh}$, $400_{en}$) and \textbf{SRILM} are used to estimate \textit{8-gram} coarse Bi-LM \textit{Coarse Bi-LM $(400_{zh},\ 400_{en})$}. Similarly, \textit{Coarse Bi-LM $400_{bi}(400_{zh},\ 400_{en})$} is estimated from augmented corpus $400_{bi}(400_{zh},\ 400_{en})$.
+
+\subsubsection{Approach 2}
+In \textit{approach 2} (Figure~\ref{fig:idea2}), we follow the same steps as in \textit{approach 1} to estimate \textit{Coarse LM $100_{en}$}, \textit{Coarse LM $1600_{en}$} and \textit{Coarse Bi-LM $(400_{zh},\ 400_{en})$}. Using \textbf{word2vec}, we create bitoken embeddings for bitoken corpus ($400_{zh}$, $400_{en}$). For \textbf{word2vec} we use continuous bag of words (CBOW) learning algorithm and the following parameters:
+\begin{itemize}
+	\item Initial learning rate: \texttt{0.05}
+	\item Word vector dimensions: \texttt{300}
+	\item Threshold for configuring which higher-frequency words are randomly downsampled: \texttt{1e-4}
+	\item Negative sampling will be used and the value determines the number of noise words to be drawn: \texttt{5}
+	\item Number of training iterations: \texttt{15}
+	\item Maximum distance between the current and predicted word within a sentence\texttt{8}
+\end{itemize}
+
+The bitoken embeddings are clustered using \textbf{greedo} with cluster size set to 400. Utilizing the clusters, the bitoken corpus is transformed to create augmented bitoken corpus $400_{bi}(400_{zh},\ 400_{en})$. From this augmented bitoken corpus, we estimate an 8-gram coarse Bi-LM \textit{Coarse Bi-LM $400_{bi}(400_{zh},\ 400_{en})$}.
+
+\subsubsection{Approach 3}
+In \textit{approach 3}, we utilize the coarse LMs \textit{Coarse LM $100_{en}$} and \textit{Coarse LM $1600_{en}$} estimated for \textit{approach 2}. As shown in Figure~\ref{idea3}, in this appraoch we only use one coarse Bi-LM model instead of two. To
+
+Using Zh-En parallel corpus, HMM alignments and IBM Model 2 alignments, we create a bitoken corpus ($|V|_{zh},\ |V|_{en}$). Here, $|V|$ denotes that we use the full vocabulary instead of first clustering the parallel corpus and then creating bitokens. Utilizing \textbf{word2vec} again, we create bitoken embeddings with the same parameters as used in \textit{approach 2}. The bitoken embeddings are clustered into 400 clusters using \textbf{greedo}. The clusters are then utilizied to augment the bitoken corpus to create an augmented bitoken corpus \textit{$400_{bi}(|V|_{zh},\ |V|_{en})$}. Using the augmented bitoken corpus and \textbf{SRILM}, we estimate the 8-gram coarse Bi-LM \textit{Coarse Bi-LM $400_{bi}(|V|_{zh},\ |V|_{en})$} with \textit{Witten-Bell smoothing}.
+
+We use the coarse LMs and Bi-LMs estimated by the three approaches in Moses decoder. We describe this process in the next section.
+
+
+\section{Integration with Decoder}\label{feature-function}
+In Section~\ref{three-baseline} and Section~\ref{three-approaches}, we described in detail the steps to create coarse LMs and Bi-LMs. In phrase-based SMT, these models would be used as extra features in the log linear model described in Section~\ref{intro-decoder}. In Moses decoder, these features can be added by creating stateful feature functions. In the stateful feature function that we created, we use these models as language model using the KenLM~\cite{KenLM} wrapper integrated with Moses. \textbf{SRILM} stores the estimated language models in ARPA format\footnote{More details about ARPA format: \url{http://www.speech.sri.com/projects/srilm/manpages/ngram-format.5.html}}. This format is a standard format which can be read by most of the popular language modelling toolkits and specially \textbf{KenLM}. 
+
+Using coarse LMs in a stateful feature function is straightforward. When the decoder is translating a source sentence, it create partial hypothesis for each of the possible phrases in the source sentence and their translations from the phrase table. For each partial hypothesis, all the defined feature functions are called and each of those feature functions would generate a score for the partial hypothesis. In our case, it would be log probability score by our language models. For coarse LMs, whenever the feature function is called, for each of the coarse LMs, we perform the following steps:
+\begin{itemize}
+	\item Extract target phrase from hypotheis.
+	\item As each coarse LM was estimated for an augmented corpus, augmented by replacing words with corresponding cluster ids, we use the cluster mapping for that coarse LM to replace the words in the target phrase with the corresponding cluster id.
+	\item Score the augmented target phrase using the required coarse LM.
+\end{itemize}
+
+The feature function would return the score that is calculated. This score is then used by the decoder in choosing the best possible hypothesis path while translating the sentence.
+
+To score partial hypothesis using coarse Bi-LMs, the feature function not only uses the bilingual phrase pair in the partial hypothesis, but also uses the alignments within those phrase pairs which are available from the phrase table. Using the alignments and bilingual phrase pairs, we create the bitokens. Before creating the bitoken optionaly, we replace the words in phrase pair with the cluster ids, depending if we are calculating for \textit{approaches 1\& 2 or 3}. The bitokens are then optionally replaced by their cluster ids (they are replaced by cluster ids when estimating the score from \textit{Coarse Bi-LM $400_{bi}(|V|_{src},\ |V|_{tgt})$} and are not replaced in case of \textit{Coarse Bi-LM $(400_{src},\ 400_{tgt})$}). Once we have the set of required phrase of tokens, we can then score them with our coarse Bi-LMs.
+
+In the next section we describe the results of the baseline system and our approaches.
+
+\section{Results}
+
+For our experiments as mentioned earlier we use Moses decoder~\cite{Koehn2007Moses}. We implemented a stateful feature (Section~\ref{feature-function}) function\footnote{Moses Feature Functions: \url{http://www.statmt.org/moses/?n=Moses.FeatureFunctions}} to score each partial hypothesis with the coarse LMs and Bi-LMs in the baseline system and our approaches. For all our experiments, we use a 5-gram English language model. Table~\ref{table:language-model-statistics} shows the statistics of our language model. For training the translation table, we use Moses to perform the following step on Zh-En training dataset (Table~\ref{table:corpus-statistics}):
+\begin{itemize}
+	\item Train alignments using GIZA++\cite{Och2003}. By default Moses will train IBM Model 4 alignments with \texttt{grow-diag-final-and} as the merging heuristic.
+	\item Perform phrase extraction and scoring of features. For our experiments, we set the \texttt{max-phrase-length} setting to \textit{7} and \texttt{distortion-limit} as \textit{-1}.
+	\item Create lexicalised reordering model using the heuristic \texttt{msd-bidirectional}.
+\end{itemize}
+
+This will create \texttt{moses.ini} which contains the settings of all the default features of Moses. We modify the \texttt{moses.ini} file and add information about coarse LM and coarse Bi-LMs.
+
+For all our experiments, we tune the feature weights using \textit{Minimum Error Rate Training} (MERT)~\cite{Och2003} and BLEU score as the metric for optimization.
+
+Table~\ref{table:results} shows BLEU scores and Translation Error Rate (TER) for the four systems. All three of our approaches consistently outperform the baseline system. \textit{Approach 2} achieves an increase of \textbf{1.4 BLEU points} over the baseline system. In the table we also report the \textit{$p$-value} of our results. The \textit{p-value} shows how statistically significant our results are. To be statistically significant, the $p$-value should be $< 0.05$, and \textit{approach 2} achieves a $p$-value of $0.00$. We used \textbf{multeval}~\cite{multeval} to calculate the BLEU score, TER score and $p$-value. Since, when looking at BLEU score \textit{approach 2} has statistically significant results, we deem it as the winning candidate out of all three of our approaches.
+
+\begin{table}
+	\begin{center}
+		\begin{tabular}{|c|c|c|c|c|c|}
+			\hline
+			\textbf{Corpus} & \multicolumn{5}{c|}{\textbf{Counts}} \\
+			\cline{2-6}
+			 & \textbf{1-gram} & \textbf{2-gram} & \textbf{3-gram} & \textbf{4-gram} & \textbf{5-gram}\\\hline
+			English Gigaword & 3,621,795 & 15,004,955 & 31,570,877 & 43,974,562 & 521,798,40\\\hline
+		\end{tabular}
+		\caption{5-gram language model for English and counts of each gram.}
+		\label{table:language-model-statistics}		
+	\end{center}
+\end{table}
+
+\begin{table}[htb]
+	\begin{center}
+			\begin{tabular}{|l|l|l|l|l|l|l|}
+				\hline
+				\bf Metric & \bf System & \bf Score & \bf $p$-value \\
+				\hline
+				\multirow{4}{*}{BLEU $\uparrow$}
+				& Baseline & 23.0 & - \\
+				& Approach 1 & 23.4  & 0.33 \\
+				& \textbf{Approach 2} & \textbf{24.4} & \textbf{0.00} \\
+				& Approach 3 & 23.1 & 0.82 \\
+				\hline
+				\multirow{4}{*}{TER $\downarrow$}
+				& baseline & 77.5 & - \\
+				& \textbf{Approach 1} & \textbf{71.0} & \textbf{0.00} \\
+				& Approach 2 & 71.9 & 0.00 \\
+				& Approach 3 & 73.0 & 0.00 \\
+				\hline
+			\end{tabular}
+			\caption{Results comparing the baseline system~\ref{three-baseline} and three of our approaches~\ref{three-approaches}}
+			\label{table:results}
+	\end{center}
+\end{table}
+
+
+\section{Summary}
+In this chapter we described the steps we took to implement the baseline system~\cite{Stewart2014} and our three approaches. We also describe in detail how we chose the parameters when creating the bilingual word embeddings and bitoken embeddings. Finally we show that \textbf{approach 2} outperforms the baseline by \textbf{1.4 BLEU points} and other approaches by almost \textbf{0.1 to 0.4} BLEU points. We also show that our results are statistically significant. In the next chapter we will conclude our thesis and describe where we would like to further take this research.

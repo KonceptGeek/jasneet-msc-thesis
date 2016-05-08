@@ -1,0 +1,125 @@
+\documentclass{sfuthesis}
+
+\title{Bilingual Language Models using Word Embeddings for Machine Translation}
+\thesistype{Thesis}
+\author{Jasneet Singh Sabharwal}
+\previousdegrees{%
+	B.Tech., Guru Gobind Singh Indraprastha University, 2010}
+\degree{Master of Science}
+\discipline{Computing Science}
+\department{School of Computing Science}
+\faculty{Faculty of Applied Sciences}
+\copyrightyear{2016}
+\semester{Summer 2016}
+\date{19 May 2016}
+
+\keywords{Bilingual Language Models; Bilingual Word Embeddings; Machine Translation}
+
+\committee{%
+	\chair{Ryan Shea}{University Research Associate - Big Data Systems\\Simon Fraser University}
+	\member{Anoop Sarkar}{Co-Senior Supervisor\\Professor, School of Computing Science\\Simon Fraser University}
+	\member{Fred Popowich}{Co-Senior Supervisor\\Professor, School of Computing Science\\Simon Fraser University}
+	\member{Jiannan Wang}{Internal Examiner\\Assistant Professor, School of Computing Science\\Simon Fraser University}
+}
+
+%   PACKAGES AND CUSTOMIZATIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Add any packages or custom commands you need for your thesis here.
+%   You don't need to call the following packages, which are already called in
+%   the sfuthesis class file:
+%
+%   - appendix
+%   - etoolbox
+%   - fontenc
+%   - geometry
+%   - lmodern
+%   - nowidow
+%   - setspace
+%   - tocloft
+%
+%   If you call one of the above packages (or one of their dependencies) with
+%   options, you may get a "Option clash" LaTeX error. If you get this error,
+%   you can fix it by removing your copy of \usepackage and passing the options
+%   you need by adding
+%
+%       \PassOptionsToPackage{<options>}{<package>}
+%
+%   before \documentclass{sfuthesis}.
+%
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{boxedminipage}
+\usepackage{breakcites}
+\usepackage{multirow}
+\usepackage{xeCJK}
+\NewDocumentCommand{\textzh}{m}{%
+	\begingroup\makexeCJKactive#1\endgroup
+}
+
+
+
+%   FRONTMATTER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Title page, committee page, copyright declaration, abstract,
+%   dedication, acknowledgements, table of contents, etc.
+%
+
+\begin{document}
+
+\frontmatter
+\maketitle{}
+\makecommittee{}
+
+
+\include{files/abstract}
+%\include{files/dedquot}
+%\include{files/ack}
+
+\addtoToC{Table of Contents}\tableofcontents\clearpage
+\addtoToC{List of Tables}\listoftables\clearpage
+\addtoToC{List of Figures}\listoffigures
+
+
+
+
+
+%   MAIN MATTER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Start writing your thesis --- or start \include ing chapters --- here.
+%
+
+\mainmatter%
+
+\include{files/intro}
+\include{files/two}
+\include{files/three}
+\include{files/four}
+\include{files/conclusion}
+
+
+
+
+%   BACK MATTER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   References and appendices. Appendices come after the bibliography and
+%   should be in the order that they are referred to in the text.
+%
+%   If you include figures, etc. in an appendix, be sure to use
+%
+%       \caption[]{...}
+%
+%   to make sure they are not listed in the List of Figures.
+%
+
+\backmatter%
+	\addtoToC{Bibliography}
+	\bibliographystyle{apalike}
+	\bibliography{files/thes-both}
+
+%\begin{appendices} % optional
+%	\chapter{Code}
+%\end{appendices}
+\end{document}

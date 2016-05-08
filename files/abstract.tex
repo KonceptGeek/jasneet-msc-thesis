@@ -1,0 +1,20 @@
+%% Copyright 1998 Pepe Kubon
+%%
+%% `abstract.tex' --- abstract for thes-full.tex, thes-short-tex from
+%%                    the `csthesis' bundle
+%%
+%% You are allowed to distribute this file together with all files
+%% mentioned in READ.ME.
+%%
+%% You are not allowed to modify its contents.
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%       Abstract 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{abstract}
+Bilingual language models(Bi-LMs) refers to language models that are modeled using both source and target words in a parallel corpus. While translating a source sentence to a target language, the decoder in phrase-based machine translation system breaks down the source sentence into phrases. It then translates each phrase into the target language. While decoding each phrase, the decoder has very little information about source words that are outside the current phrase in consideration. Bi-LMs have been used to provide more information about source words outside the current phrase. Bi-LMs are estimated by first creating bitoken sequences using a parallel corpus and the word alignments between the source and target words in that corpus. When creating the bitoken sequences, the vocabulary expands considerably and Bi-LMs suffer due to this huge vocabulary which in turn increases the sparsity of the language models. In previous work, bitokens were created by first replacing each word in the parallel corpus either by their part-of-speech tags or word classes after clustering using Brown clustering algorithm. Both of these approaches only take into account words that are direct translations of each other as they only depend on word alignments between the source word and target word in the bitokens. We propose to use bilingual word embeddings to reduce the vocabulary of the bitokens. Bilingual word embeddings are a low dimensional representation of words in two languages such that words in either language that are similarly distributed are placed nearby in an abstract vector space. Our approach outperforms previous work using Bi-LMs with an increase of 1.4 BLEU points in our experiments.
+\end{abstract}
